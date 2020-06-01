@@ -1,54 +1,44 @@
 package br.com.josemar.streamingaudio.controller;
 
-import br.com.josemar.streamingaudio.util.Converter;
 import com.github.kiulian.downloader.YoutubeDownloader;
 import com.github.kiulian.downloader.YoutubeException;
 import com.github.kiulian.downloader.model.YoutubeVideo;
-import org.springframework.core.io.InputStreamResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import ws.schild.jave.*;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 @RestController
 @RequestMapping("/play")
 public class PlayRequest {
 
+    Logger LOGGER = LoggerFactory.getLogger(PlayRequest.class);
+
     File diretorioTemp = new File(System.getProperty("java.io.tmpdir"));
     YoutubeDownloader downloader = new YoutubeDownloader();
 
     @RequestMapping("/{idMusica}")
-    public ResponseEntity play(@PathVariable("idMusica") String idMusica){
+    public ResponseEntity play(@PathVariable("idMusica") String idMusica) throws IOException,YoutubeException{
 
-        try {
+            LOGGER.error(">>> Inciando execucao do metodo play com o IdMusica:" + idMusica);
+
+            LOGGER.error(">>> Inciando instancia da varivel video");
             YoutubeVideo video = downloader.getVideo(idMusica);
+            LOGGER.error(">>> Encerrando instancia da varivel video");
+
+            LOGGER.error(">>> Inciando instancia da varivel videobaixado");
             File videoBaixado = video.download(video.videoWithAudioFormats().get(0),diretorioTemp);
-            videoBaixado.deleteOnExit();
+            LOGGER.error(">>> Encerrando instancia da varivel videoBaixado");
 
-            File musicaConvertida = Converter.converter(videoBaixado);
+            return new ResponseEntity(new FileInputStream(videoBaixado).readAllBytes(),HttpStatus.OK);
 
-            InputStreamResource stream = new InputStreamResource(new FileInputStream(musicaConvertida));
-
-            return new ResponseEntity(stream,HttpStatus.OK);
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (YoutubeException e) {
-            e.printStackTrace();
-        } catch (EncoderException e) {
-            e.printStackTrace();
-        }
-
-        return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
     };
 
 
